@@ -1,0 +1,65 @@
+local winpath = "C:/ProgramData/EastWave/";
+json_setting = io.handler.json.load(winpath.."project_setting_parallel_multidask.json");
+
+//local work_catalog = "C:/Users/SDJ-JSJ074/Desktop/任务级并行工具/";
+local work_catalog = json_setting.work_file.path.."/";
+local data = io.handler.json.load(work_catalog.."mxi_setting.json");
+
+local idata = ["param"];
+
+for(i in data)
+{
+	local temp_idata = [i[0]];
+
+	idata = cat(0,idata,temp_idata);
+}
+
+local dworkmode = json_setting['dworkmode'];
+local idata1 = [];
+if(dworkmode ==0)
+{
+    idata1 = ["RCS_angle1"];
+    for(i in data)
+    {
+        local data = io.load_var(i[2]..".mxd");
+        local x,result_1 = data.results.RCS_Monostatic.idata.get_data("Mono_freq", table{index_theta:0;index_phi:0;component:0;quantity:0});
+
+        local temp_idata = [result_1[0]];
+
+        idata1 = cat(0,idata1,temp_idata);
+    }
+}
+
+idata = cat(1,idata, idata1);
+
+local enable_custom_goal = json_setting['enable_custom_goal'];
+local idata2 = [];
+if( enable_custom_goal == 1)
+{
+
+    local idata_custom = json_setting['goal_table'];
+    for(i in idata_custom)
+    {
+        idata2.push(i[0]);
+    }
+
+	for(i in data)
+    {
+        local results = io.load_var(i[2]..".mxd")["results"];
+
+        local temp= [];
+        for( i in idata_custom)
+        {
+            local custom_code = i[1];
+            local return_value = eval1(i[1], table{results:results});
+            temp.push(return_value);
+        }
+
+        idata2 = cat(0, idata2, temp);
+
+    }
+}
+
+local idata3 = cat(1, idata, idata2);
+
+io.save_txt(work_catalog.."mxi_deal.txt", idata3);
